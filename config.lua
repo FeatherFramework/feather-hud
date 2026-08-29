@@ -1,5 +1,9 @@
 Config = {}
 
+-- HUD-owned display progression. This controls only how raw character XP is
+-- presented as a level and percentage; Core does not own gameplay progression.
+Config.XPPerLevel = 1900
+
 -- HudPosition: the 8 places the cash/gold/tokens/XP strip can appear on
 -- screen. To change where it shows up, edit Config.ResourceStrip.anchor
 -- below and set it to ONE of these -- e.g. HudPosition.TopLeft.

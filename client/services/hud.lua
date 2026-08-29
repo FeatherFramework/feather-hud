@@ -32,7 +32,7 @@ local function applyCharacter(character)
     state.tokens = tonumber(character.tokens) or 0
 
     local xp = tonumber(character.xp) or 0
-    local perLevel = tonumber(Feather.Config.XP.perLevel) or 1
+    local perLevel = math.max(1, tonumber(Config.XPPerLevel) or 1900)
 
     state.xp = xp
     state.level = math.floor(xp / perLevel) + 1
