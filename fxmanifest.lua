@@ -6,19 +6,13 @@ lua54 'yes'
 name 'feather-hud'
 description 'The player HUD for the Feather Framework'
 author 'Feather @Bytesizd'
-version '0.1.4'
-
-github_version_check 'true'
-github_version_type 'release'
-github_ui_check 'true'
-github_link 'https://github.com/DavFount/feather-hud'
+version '0.2.0'
 
 shared_scripts {
     'config.lua'
 }
 
 client_scripts {
-    'client/imports.lua',
     'client/services/*.lua',
     'client/main.lua'
 }
@@ -30,8 +24,4 @@ ui_page {
 files {
     'ui/index.html',
     'ui/assets/*.*'
-}
-
-dependencies {
-    'feather-core'
 }
