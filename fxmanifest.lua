@@ -6,7 +6,7 @@ lua54 'yes'
 name 'feather-hud'
 description 'The player HUD for the Feather Framework'
 author 'Feather @Bytesizd'
-version '0.2.0'
+version '0.2.1'
 
 shared_scripts {
     'config.lua'
