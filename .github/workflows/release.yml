@@ -31,7 +31,7 @@ jobs:
         working-directory: ./ui
       - uses: vimtor/action-zip@v1
         with:
-          files: fxmanifest.lua config.lua ui/dist client
+          files: fxmanifest.lua config.lua ui/dist client server
           recursive: false
           dest: feather-hud.zip
       - name: get-npm-version
