@@ -6,15 +6,20 @@ lua54 'yes'
 name 'feather-hud'
 description 'The player HUD for the Feather Framework'
 author 'Feather @Bytesizd'
-version '0.2.1'
+version '0.3.0'
 
 shared_scripts {
     'config.lua'
 }
 
 client_scripts {
+    'client/imports.lua',
     'client/services/*.lua',
     'client/main.lua'
+}
+
+server_scripts {
+    'server/main.lua'
 }
 
 ui_page {

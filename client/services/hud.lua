@@ -97,3 +97,42 @@ RegisterNetEvent("Feather:Character:Revive", function()
     state.visible = true
     pushState()
 end)
+
+-- Feather:Character:Spawned only fires once, at the moment of spawning --
+-- it never replays for a resource that (re)starts after that already
+-- happened. Ask the server directly on start: a successful reply is proof
+-- a character is currently active, so the strip doesn't stay stuck hidden
+-- until the player's next actual spawn.
+-- Note: the character-profile provider only carries identity fields (name,
+-- model, appearance) -- not dollars/gold/tokens/xp, which this codebase has
+-- no live source for at all today (nothing ever fires
+-- Feather:Character:EconomyUpdated either). So this can only recover
+-- visibility, not the economy figures; those stay at 0 until that separate,
+-- pre-existing gap is addressed.
+FeatherCore.RPC.Call('hud.state.get.v1', {}, function(result)
+    if type(result) == 'table' and result.ok then
+        state.visible = true
+        pushState()
+    end
+end)
+
+-- Hide the strip while the pause menu is open; edge-triggered so it only
+-- pushes an NUI update on actual state changes, not every frame.
+local paused, visibleBeforePause = false, false
+
+CreateThread(function()
+    while true do
+        Wait(0)
+        local nowPaused = IsPauseMenuActive()
+        if nowPaused ~= paused then
+            paused = nowPaused
+            if paused then
+                visibleBeforePause = state.visible
+                state.visible = false
+            else
+                state.visible = visibleBeforePause
+            end
+            pushState()
+        end
+    end
+end)
