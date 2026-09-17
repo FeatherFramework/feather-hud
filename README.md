@@ -30,6 +30,27 @@
 
 ## Configuration
 
+Dollars and gold now read from Economy's open wallets through the source-bound
+`hud.state.get.v1` RPC. Minor-unit balances convert using each currency's catalog
+precision. Character money fields are not used. Tokens/XP remain on the existing
+Character path. HUD reads do not provision wallets or maintain a ledger.
+
+Economy outbox events broadcast an empty invalidation signal, not ledger data.
+Clients coalesce signals and refresh only their own session; periodic 10-second
+reads recover missed signals. Logout clears/hides state, spawn invalidates older
+in-flight reads, and unavailable wallet reads hide the strip rather than assume
+zero balances. Pause visibility cannot overwrite a newly refreshed wallet state.
+Both currencies render integer minor-unit balances using Economy catalog
+precision (currently two decimals). The formatter avoids floating-point division
+and preserves small gold amounts and large balances. Unavailable/invalid values
+are not formatted as zero. Run pnpm test for formatter regression coverage.
+UI source changes require a production build and deployment of ui/dist contents
+to the deployed resource's ui folder; generated files are not source commits.
+
+Start Core and Economy before HUD. The manifest now declares both dependencies:
+run refresh then restart feather-hud. `HudEconomyContractSmokeTest` expects 2/2
+passes with no funds moved (route installed and outbox subscription).
+
 All settings live in `config.lua`. Positioning uses a `HudPosition` table of named constants instead of raw text,
 so there's no risk of a typo silently breaking the layout:
 

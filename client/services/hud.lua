@@ -14,6 +14,10 @@
 local state = {
     cash = 0,
     gold = 0,
+    cashMinor = 0,
+    goldMinor = 0,
+    cashPrecision = 2,
+    goldPrecision = 2,
     tokens = 0,
     xp = 0,
     level = 1,
@@ -27,8 +31,6 @@ local state = {
 local function applyCharacter(character)
     if not character then return end
 
-    state.cash = tonumber(character.dollars) or 0
-    state.gold = tonumber(character.gold) or 0
     state.tokens = tonumber(character.tokens) or 0
 
     local xp = tonumber(character.xp) or 0
@@ -39,10 +41,14 @@ local function applyCharacter(character)
     state.xpPercent = math.floor((xp % perLevel) / perLevel * 100)
 end
 
+local paused, refreshRequested, epoch = false, true, 0
 local function pushState()
+    local snapshot = {}
+    for key, value in pairs(state) do snapshot[key] = value end
+    snapshot.visible = state.visible and not paused
     SendNUIMessage({
         type = 'state',
-        state = state
+        state = snapshot
     })
 end
 
@@ -83,18 +89,27 @@ RegisterNUICallback('ready', function(_, cb)
 end)
 
 RegisterNetEvent("Feather:Character:Spawned", function(character)
-    state.visible = true
+    epoch = epoch + 1
+    state.visible = false
+    refreshRequested = true
     applyCharacter(character)
     pushState()
 end)
 
-RegisterNetEvent("Feather:Character:EconomyUpdated", function(character)
-    applyCharacter(character)
+RegisterNetEvent('feather-hud:wallets:invalidate', function() refreshRequested = true end)
+
+RegisterNetEvent('Feather:Character:Logout', function()
+    epoch = epoch + 1
+    state.visible = false
+    state.cash, state.gold, state.tokens, state.xp = 0, 0, 0, 0
+    state.cashMinor, state.goldMinor = 0, 0
+    state.level, state.xpPercent = 1, 0
+    refreshRequested = true
     pushState()
 end)
 
 RegisterNetEvent("Feather:Character:Revive", function()
-    state.visible = true
+    refreshRequested = true
     pushState()
 end)
 
@@ -103,22 +118,36 @@ end)
 -- happened. Ask the server directly on start: a successful reply is proof
 -- a character is currently active, so the strip doesn't stay stuck hidden
 -- until the player's next actual spawn.
--- Note: the character-profile provider only carries identity fields (name,
--- model, appearance) -- not dollars/gold/tokens/xp, which this codebase has
--- no live source for at all today (nothing ever fires
--- Feather:Character:EconomyUpdated either). So this can only recover
--- visibility, not the economy figures; those stay at 0 until that separate,
--- pre-existing gap is addressed.
-FeatherCore.RPC.Call('hud.state.get.v1', {}, function(result)
-    if type(result) == 'table' and result.ok then
-        state.visible = true
-        pushState()
+-- Money comes exclusively from Economy. Serialized refreshes also recover
+-- missed invalidation signals and HUD restarts; Character retains tokens/XP.
+CreateThread(function()
+    local ready = exports['feather-core']:AwaitReady(30000)
+    if type(ready) ~= 'table' or not ready.ok then return end
+    local lastRead = -10000
+    while true do
+        Wait(250)
+        local now = GetGameTimer()
+        if (refreshRequested or now - lastRead >= 10000) and now - lastRead >= 1500 then
+            refreshRequested, lastRead = false, now
+            local expectedEpoch = epoch
+            local called, result = pcall(function() return FeatherCore.RPC.CallAsync('hud.state.get.v1', {}, nil, 5000) end)
+            if expectedEpoch == epoch then
+                if called and type(result) == 'table' and result.ok and type(result.value) == 'table'
+                    and type(result.value.cash) == 'number' and type(result.value.gold) == 'number'
+                    and type(result.value.cashMinor) == 'number' and type(result.value.goldMinor) == 'number'
+                    and type(result.value.cashPrecision) == 'number' and type(result.value.goldPrecision) == 'number' then
+                    state.cash, state.gold, state.visible = result.value.cash, result.value.gold, true
+                    state.cashMinor, state.goldMinor = result.value.cashMinor, result.value.goldMinor
+                    state.cashPrecision, state.goldPrecision = result.value.cashPrecision, result.value.goldPrecision
+                else state.visible = false end
+                pushState()
+            end
+        end
     end
 end)
 
 -- Hide the strip while the pause menu is open; edge-triggered so it only
 -- pushes an NUI update on actual state changes, not every frame.
-local paused, visibleBeforePause = false, false
 
 CreateThread(function()
     while true do
@@ -126,12 +155,6 @@ CreateThread(function()
         local nowPaused = IsPauseMenuActive()
         if nowPaused ~= paused then
             paused = nowPaused
-            if paused then
-                visibleBeforePause = state.visible
-                state.visible = false
-            else
-                state.visible = visibleBeforePause
-            end
             pushState()
         end
     end

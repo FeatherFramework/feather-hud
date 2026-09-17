@@ -8,6 +8,10 @@ export const useResourceStripStore = defineStore('resourceStrip', {
     state: () => ({
         cash: 0,
         gold: 0,
+        cashMinor: 0,
+        goldMinor: 0,
+        cashPrecision: 2,
+        goldPrecision: 2,
         tokens: 0,
         xp: 0,
         level: 1,

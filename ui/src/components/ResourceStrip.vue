@@ -5,6 +5,7 @@ import moneyIcon from '@/assets/icons/money.png';
 import goldIcon from '@/assets/icons/gold.png';
 import tokenIcon from '@/assets/icons/token.png';
 import shieldIcon from '@/assets/icons/shield.png';
+import { splitCurrency } from '@/store/currency';
 
 const store = useResourceStripStore();
 
@@ -97,12 +98,8 @@ function toRoman(num) {
 const rankLabel = computed(() => `RANK ${toRoman(store.level)}`);
 const xpDisplay = computed(() => Math.floor(store.xp).toLocaleString('en-US'));
 
-function splitDecimal(value, decimals) {
-  const [whole, frac] = Number(value ?? 0).toFixed(decimals).split('.');
-  return { whole, frac };
-}
-const cashParts = computed(() => splitDecimal(store.cash, 2));
-const goldParts = computed(() => splitDecimal(store.gold, 1));
+const cashParts = computed(() => splitCurrency(store.cashMinor, store.cashPrecision));
+const goldParts = computed(() => splitCurrency(store.goldMinor, store.goldPrecision));
 const tokensDisplay = computed(() => Math.floor(store.tokens ?? 0));
 </script>
 
@@ -128,12 +125,12 @@ const tokensDisplay = computed(() => Math.floor(store.tokens ?? 0));
       <div class="rs-currency-row">
         <div class="rs-currency-group">
           <img :src="moneyIcon" alt="cash" class="rs-icon" />
-          <span class="rs-numeral rs-cash">{{ cashParts.whole }}<span class="rs-numeral-frac rs-cash-frac">.{{ cashParts.frac }}</span></span>
+          <span class="rs-numeral rs-cash">{{ cashParts.whole }}<span v-if="cashParts.frac" class="rs-numeral-frac rs-cash-frac">.{{ cashParts.frac }}</span></span>
         </div>
         <div class="rs-tick"></div>
         <div class="rs-currency-group">
           <img :src="goldIcon" alt="gold" class="rs-icon" />
-          <span class="rs-numeral rs-gold">{{ goldParts.whole }}<span class="rs-numeral-frac rs-gold-frac">.{{ goldParts.frac }}</span></span>
+          <span class="rs-numeral rs-gold">{{ goldParts.whole }}<span v-if="goldParts.frac" class="rs-numeral-frac rs-gold-frac">.{{ goldParts.frac }}</span></span>
         </div>
         <div class="rs-tick"></div>
         <div class="rs-currency-group">
